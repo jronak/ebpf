@@ -12,23 +12,7 @@ import (
 	"github.com/cilium/ebpf"
 )
 
-type bpfRttEvent struct {
-	Sport uint16
-	Dport uint16
-	Saddr uint32
-	Daddr uint32
-	Srtt  uint32
-}
-
-type bpfSkInfo struct {
-	SkKey  bpfSkKey
-	SkType uint8
-	_      [3]byte
-}
-
 type bpfSkKey struct {
-	LocalIp4   uint32
-	RemoteIp4  uint32
 	LocalPort  uint32
 	RemotePort uint32
 }
@@ -74,15 +58,15 @@ type bpfSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfProgramSpecs struct {
-	BpfSockopsCb *ebpf.ProgramSpec `ebpf:"bpf_sockops_cb"`
+	BpfSockopsCb   *ebpf.ProgramSpec `ebpf:"bpf_sockops_cb"`
+	BpfTcpipBypass *ebpf.ProgramSpec `ebpf:"bpf_tcpip_bypass"`
 }
 
 // bpfMapSpecs contains maps before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type bpfMapSpecs struct {
-	MapEstabSk *ebpf.MapSpec `ebpf:"map_estab_sk"`
-	RttEvents  *ebpf.MapSpec `ebpf:"rtt_events"`
+	SockMap *ebpf.MapSpec `ebpf:"sock_map"`
 }
 
 // bpfObjects contains all objects after they have been loaded into the kernel.
@@ -104,14 +88,12 @@ func (o *bpfObjects) Close() error {
 //
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfMaps struct {
-	MapEstabSk *ebpf.Map `ebpf:"map_estab_sk"`
-	RttEvents  *ebpf.Map `ebpf:"rtt_events"`
+	SockMap *ebpf.Map `ebpf:"sock_map"`
 }
 
 func (m *bpfMaps) Close() error {
 	return _BpfClose(
-		m.MapEstabSk,
-		m.RttEvents,
+		m.SockMap,
 	)
 }
 
@@ -119,12 +101,14 @@ func (m *bpfMaps) Close() error {
 //
 // It can be passed to loadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type bpfPrograms struct {
-	BpfSockopsCb *ebpf.Program `ebpf:"bpf_sockops_cb"`
+	BpfSockopsCb   *ebpf.Program `ebpf:"bpf_sockops_cb"`
+	BpfTcpipBypass *ebpf.Program `ebpf:"bpf_tcpip_bypass"`
 }
 
 func (p *bpfPrograms) Close() error {
 	return _BpfClose(
 		p.BpfSockopsCb,
+		p.BpfTcpipBypass,
 	)
 }
 
